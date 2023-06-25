@@ -64,7 +64,7 @@ namespace ProgSieciowe.Client
         private bool HandleHelp()
         {
             _communicator.Send($"{(int)CommandType.help}");
-            var msg = _communicator.ReceiveAsync().Result;
+            var msg = _communicator.ReceiveString();
             _io.WriteString(msg);
             return true;
         }
@@ -72,7 +72,7 @@ namespace ProgSieciowe.Client
         private bool HandleLs()
         {
             _communicator.Send($"{(int)CommandType.ls}");
-            var msg = _communicator.ReceiveAsync().Result;
+            var msg = _communicator.ReceiveString();
             _io.WriteString(msg);
             return true;
         }
@@ -89,7 +89,7 @@ namespace ProgSieciowe.Client
             _communicator.Send($"{(int)CommandType.delete}");
             _communicator.Send(file);
 
-            var res = _communicator.ReceiveAsync().Result;
+            var res = _communicator.ReceiveString();
             _io.WriteString(res);
 
             return true;
@@ -115,7 +115,7 @@ namespace ProgSieciowe.Client
             _communicator.Send($"{(int)CommandType.rename}");
             _communicator.Send($"{file}|{newName}");
 
-            var res = _communicator.ReceiveAsync().Result;
+            var res = _communicator.ReceiveString();
             _io.WriteString(res);
 
             return true;
@@ -136,22 +136,20 @@ namespace ProgSieciowe.Client
             var directory = Directory.GetCurrentDirectory();
             var path = Path.Combine(directory, file);
 
-            var size = int.Parse(_communicator.ReceiveAsync().Result);
-            if(size == 0)
+            var status = _communicator.ReceiveString();
+            if(status != "1")
             {
-                var errorMsg = _communicator.ReceiveAsync().Result;
+                var errorMsg = _communicator.ReceiveString();
                 _io.WriteString(errorMsg);
                 return true;
             }
 
-            var received = 0;
-
-            while(received < size)
+            var fileStream = File.OpenWrite(path);
+            foreach (var batch in _communicator.ReceiveBatchCollection())
             {
-                var str = _communicator.ReceiveAsync().Result;
-                File.AppendAllText(path, str);
-                received += str.Length;
+                fileStream.Write(batch);
             }
+            fileStream.Close();
 
             return true;
         }
@@ -174,28 +172,19 @@ namespace ProgSieciowe.Client
             var fileName = Path.GetFileName(path);
             _communicator.Send($"{(int)CommandType.upload}");
             _communicator.Send(fileName);
-            var status = _communicator.ReceiveAsync().Result;
-            if(status == "0")
+
+            var status = _communicator.ReceiveString();
+            if(status != "1")
             {
-                var errorMsg = _communicator.ReceiveAsync().Result;
+                var errorMsg = _communicator.ReceiveString();
                 _io.WriteString(errorMsg);
                 return true;
             }
 
-            var fi = new FileInfo(path);
-            var size = fi.Length;
-            var sent = 0;
-            var bufferSize = 1024;
+            _communicator.SendFile(path);
 
-            _communicator.Send(size.ToString());
-            using var fileStream = fi.OpenRead();
-
-            while (sent < size)
-            {
-                var buffer = new byte[bufferSize];
-                sent += fileStream.Read(buffer, 0, bufferSize);
-                _communicator.Send(buffer);
-            }
+            var msg = _communicator.ReceiveString();
+            _io.WriteString(msg);
 
             return true;
         }
@@ -203,7 +192,7 @@ namespace ProgSieciowe.Client
         private bool HandleExit()
         {
             _io.WriteString("Closing connection...");
-            return true;
+            return false;
         }
 
         private bool HandleUnknown()

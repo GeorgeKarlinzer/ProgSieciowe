@@ -65,7 +65,7 @@ namespace ProgSieciowe.Server
 
         private bool HandleDelete()
         {
-            var file = _communicator.ReceiveAsync().Result;
+            var file = _communicator.ReceiveString();
 
             if (file.IsValidFileName())
             {
@@ -82,7 +82,7 @@ namespace ProgSieciowe.Server
 
         private bool HandleRename()
         {
-            var input = _communicator.ReceiveAsync().Result;
+            var input = _communicator.ReceiveString();
             var oldName = input.Split('|').First();
             var newName = input.Split('|').Last();
 
@@ -100,7 +100,7 @@ namespace ProgSieciowe.Server
 
         private bool HandleDownload()
         {
-            var file = _communicator.ReceiveAsync().Result;
+            var file = _communicator.ReceiveString();
             var path = GetFileName(file);
             _logger.LogInformation("File to download: {file}", file);
             if (!file.IsValidFileName())
@@ -117,27 +117,15 @@ namespace ProgSieciowe.Server
                 return true;
             }
 
-            var fi = new FileInfo(path);
-            var size = fi.Length;
-            var sent = 0;
-            var bufferSize = 1024;
-
-            _communicator.Send(size.ToString());
-            using var fileStream = fi.OpenRead();
-
-            while (sent < size)
-            {
-                var buffer = new byte[bufferSize];
-                sent += fileStream.Read(buffer, 0, bufferSize);
-                _communicator.Send(buffer);
-            }
+            _communicator.Send("1");
+            _communicator.SendFile(path);
 
             return true;
         }
 
         private bool HandleUpload()
         {
-            var file = _communicator.ReceiveAsync().Result;
+            var file = _communicator.ReceiveString();
             if (!file.IsValidFileName())
             {
                 _communicator.Send("0");
@@ -147,16 +135,15 @@ namespace ProgSieciowe.Server
 
             _communicator.Send("1");
             var path = GetFileName(file);
-            var size = int.Parse(_communicator.ReceiveAsync().Result);
 
-            var received = 0;
-
-            while (received < size)
+            var fileStream = File.OpenWrite(path);
+            foreach (var batch in _communicator.ReceiveBatchCollection())
             {
-                var str = _communicator.ReceiveAsync().Result;
-                File.AppendAllText(path, str);
-                received += str.Length;
+                fileStream.Write(batch);
             }
+            fileStream.Close();
+
+            _communicator.Send("\tFile was uploded successfully");
 
             return true;
         }

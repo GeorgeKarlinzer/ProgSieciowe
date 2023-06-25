@@ -7,7 +7,9 @@ namespace ProgSieciowe.Core
     {
         void Send(string msg);
         void Send(byte[] bytes);
-        Task<string> ReceiveAsync();
+        void SendFile(string path);
+        string ReceiveString();
+        IEnumerable<byte[]> ReceiveBatchCollection(int maxBatchSize = 1024);
     }
 
     public class TcpCommunicator : ICommunicator
@@ -19,25 +21,46 @@ namespace ProgSieciowe.Core
             _socket = socket;
         }
 
-        public async Task<string> ReceiveAsync()
+        public IEnumerable<byte[]> ReceiveBatchCollection(int maxBatchSize = 1024)
         {
-            var buffer = new byte[1024];
-            await _socket.ReceiveAsync(buffer);
-            var msg = Encoding.UTF8.GetString(buffer);
-            msg = msg.TrimEnd('\0');
-            return msg;
+            var buffer = new byte[4];
+            _ = _socket.ReceiveAsync(buffer).Result;
+
+            var size = BitConverter.ToInt32(buffer);
+            var received = 0;
+
+            while(received < size)
+            {
+                var batchSize = maxBatchSize > size - received ? size - received : maxBatchSize;
+                buffer = new byte[batchSize];
+                _ = _socket.ReceiveAsync(buffer).Result;
+                received += batchSize;
+                yield return buffer.ToArray();
+            }
+        }
+
+        public string ReceiveString()
+        {
+            return string.Join("", ReceiveBatchCollection().Select(Encoding.UTF8.GetString));
         }
 
         public void Send(string msg)
         {
             var bytes = Encoding.UTF8.GetBytes(msg);
-
             Send(bytes);
         }
 
         public void Send(byte[] bytes)
         {
+            _socket.Send(BitConverter.GetBytes(bytes.Length));
             _socket.Send(bytes);
+        }
+
+        public void SendFile(string path)
+        {
+            var fi = new FileInfo(path);
+            _socket.Send(BitConverter.GetBytes(fi.Length), 4, SocketFlags.None);
+            _socket.SendFile(path);
         }
     }
 

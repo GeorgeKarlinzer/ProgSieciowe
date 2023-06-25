@@ -50,7 +50,7 @@ namespace ProgSieciowe.Server
             var run = true;
             while (run)
             {
-                var msg = await communicator.ReceiveAsync();
+                var msg = communicator.ReceiveString();
                 _logger.LogInformation("Received command {msg}", msg);
                 var command = (CommandType)int.Parse(msg);
                 run = commandHandler.HandleCommand(command);
