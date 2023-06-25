@@ -27,6 +27,9 @@ namespace ProgSieciowe.Core
             _ = _socket.ReceiveAsync(buffer).Result;
 
             var size = BitConverter.ToInt32(buffer);
+            if (size > 1048576)
+                throw new Exception("Received data cannot be bigger than 100MB");
+
             var received = 0;
 
             while(received < size)

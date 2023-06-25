@@ -48,15 +48,26 @@ namespace ProgSieciowe.Server
             var commandHandler = new CommandHandler(communicator, _loggerFactory, _directory);
 
             var run = true;
-            while (run)
+            try
             {
-                var msg = communicator.ReceiveString();
-                _logger.LogInformation("Received command {msg}", msg);
-                var command = (CommandType)int.Parse(msg);
-                run = commandHandler.HandleCommand(command);
+                while (run)
+                {
+                    var msg = communicator.ReceiveString();
+                    _logger.LogInformation("Received command {msg}", msg);
+                    var command = (CommandType)int.Parse(msg);
+                    run = commandHandler.HandleCommand(command);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
             }
 
-            client.Close();
+            try
+            {
+                client.Close();
+            }
+            catch { }
             _logger.LogInformation("Client disconnected");
         }
     }

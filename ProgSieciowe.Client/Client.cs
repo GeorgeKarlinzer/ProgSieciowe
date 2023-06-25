@@ -3,6 +3,7 @@ using ProgSieciowe.Core;
 using ProgSieciowe.Core.Enums;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.RegularExpressions;
 
 namespace ProgSieciowe.Client
 {
@@ -31,14 +32,39 @@ namespace ProgSieciowe.Client
             var commandHelper = new CommandHandler(communicator, _io);
 
             var run = true;
-            while (run)
+            try
             {
-                _io.WriteString("Enter command:");
-                var args = _io.GetString().Split(' ');
-                run = commandHelper.HandleCommand(args);
+                while (run)
+                {
+                    _io.WriteString("Enter command:");
+                    var input = _io.GetString();
+                    var args = new List<string>();
+
+                    foreach (Match match in Regex.Matches(input, @"""([^""]+)""|([^ ]+)"))
+                    {
+                        string arg;
+                        if (string.IsNullOrEmpty(match.Groups[1].Value))
+                            arg = match.Groups[0].Value;
+                        else
+                            arg = match.Groups[1].Value;
+
+                        args.Add(arg);
+                    }
+
+                    run = commandHelper.HandleCommand(args.ToArray());
+                }
+            }
+            catch (Exception ex)
+            {
+                _io.WriteString(ex.Message);
             }
 
-            socket.Close();
+            try
+            {
+                socket.Close();
+            }
+            catch { }
+
             _io.WriteString("Connection with server closed");
         }
     }
