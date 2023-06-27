@@ -23,52 +23,33 @@ namespace ProgSieciowe.Server
             _logger = loggerFactory.CreateLogger<Server>();
         }
 
-        public async Task StartAsync()
+        public void Start()
         {
-            var tcpListener = new Socket(_address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
-            tcpListener.Bind(new IPEndPoint(_address, _port));
-
-            tcpListener.Listen(10);
-
-            _logger.LogInformation("Server started");
-
-            while (true)
-            {
-                var client = await tcpListener.AcceptAsync();
-                HandleConnectionAsync(client);
-            }
-        }
-
-        private async void HandleConnectionAsync(Socket client)
-        {
-            _logger.LogInformation("Client connected");
-
-            var communicator = new TcpCommunicator(client);
-            var commandHandler = new CommandHandler(communicator, _loggerFactory, _directory);
-
-            var run = true;
             try
             {
-                while (run)
+                var arg = (new IPEndPoint(_address, _port), _loggerFactory, _directory);
+
+                var udpThread = new Thread(new ParameterizedThreadStart(UdpServer.UpdServerProcess))
                 {
-                    var msg = communicator.ReceiveString();
-                    _logger.LogInformation("Received command {msg}", msg);
-                    var command = (CommandType)int.Parse(msg);
-                    run = commandHandler.HandleCommand(command);
-                }
+                    IsBackground = true,
+                    Name = "UDP server thread"
+                };
+                udpThread.Start(arg);
+
+                var tcpThread = new Thread(new ParameterizedThreadStart(TcpServer.TcpServerProcess))
+                {
+                    IsBackground = true,
+                    Name = "TCP server thread"
+                };
+                tcpThread.Start(arg);
+
+                Console.WriteLine("Press <ENTER> to stop the servers.");
+                Console.ReadLine();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error");
+                Console.WriteLine("Main exception: " + ex);
             }
-
-            try
-            {
-                client.Close();
-            }
-            catch { }
-            _logger.LogInformation("Client disconnected");
         }
     }
 }

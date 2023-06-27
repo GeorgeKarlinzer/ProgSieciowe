@@ -3,9 +3,9 @@ using ProgSieciowe.ClientRuntime;
 using ProgSieciowe.Core.Enums;
 using System.Net;
 
-var protocol = Protocol.Tcp;
-var address = IPAddress.Loopback;
-var port = 1050;
+var address = IPAddress.Parse(args[0]);
+var port = int.Parse(args[1]);
+var protocol = args[2] == "udp" ? Protocol.Udp : Protocol.Tcp;
 var consoleInput = new ConsoleInputOutput();
 
 var client = new Client(protocol, address, port, consoleInput);

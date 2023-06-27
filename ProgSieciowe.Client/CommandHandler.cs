@@ -144,12 +144,7 @@ namespace ProgSieciowe.Client
                 return true;
             }
 
-            var fileStream = File.OpenWrite(path);
-            foreach (var batch in _communicator.ReceiveBatchCollection())
-            {
-                fileStream.Write(batch);
-            }
-            fileStream.Close();
+            _communicator.ReceiveFile(path);
 
             return true;
         }
@@ -197,7 +192,7 @@ namespace ProgSieciowe.Client
 
         private bool HandleUnknown()
         {
-            _io.WriteString("Unknown command");
+            _io.WriteString("\tUnknown command");
             return true;
         }
     }

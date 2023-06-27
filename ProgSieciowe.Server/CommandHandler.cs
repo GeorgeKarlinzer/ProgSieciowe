@@ -2,7 +2,6 @@
 using ProgSieciowe.Core;
 using ProgSieciowe.Core.Enums;
 using ProgSieciowe.Server.Extensions;
-using System.Drawing;
 
 namespace ProgSieciowe.Server
 {
@@ -136,12 +135,7 @@ namespace ProgSieciowe.Server
             _communicator.Send("1");
             var path = GetFileName(file);
 
-            var fileStream = File.OpenWrite(path);
-            foreach (var batch in _communicator.ReceiveBatchCollection())
-            {
-                fileStream.Write(batch);
-            }
-            fileStream.Close();
+            _communicator.ReceiveFile(path);
 
             _communicator.Send("\tFile was uploded successfully");
 

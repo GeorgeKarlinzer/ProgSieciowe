@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using ProgSieciowe.Core;
+﻿using ProgSieciowe.Core;
 using ProgSieciowe.Core.Enums;
 using System.Net;
 using System.Net.Sockets;
@@ -24,11 +23,27 @@ namespace ProgSieciowe.Client
 
         public void Start()
         {
-            var socket = new Socket(_address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            socket.Connect(new IPEndPoint(_address, _port));
-            _io.WriteString("Connection established");
+            ICommunicator communicator;
+            var serverEndPoint = new IPEndPoint(_address, _port);
+            if (_protocol is Protocol.Tcp)
+            {
+                var tcpClient = new TcpClient();
+                tcpClient.Connect(serverEndPoint);
+                communicator = new TcpCommunicator(tcpClient);
+                _io.WriteString("Connection established");
+            }
+            else
+            {
+                var client = new UdpClient();
+                communicator = new UdpCommunicator(client, serverEndPoint);
+                communicator.Send("start");
+            }
 
-            var communicator = new TcpCommunicator(socket);
+            StartCient(communicator);
+        }
+
+        private void StartCient(ICommunicator communicator)
+        {
             var commandHelper = new CommandHandler(communicator, _io);
 
             var run = true;
@@ -58,12 +73,6 @@ namespace ProgSieciowe.Client
             {
                 _io.WriteString(ex.Message);
             }
-
-            try
-            {
-                socket.Close();
-            }
-            catch { }
 
             _io.WriteString("Connection with server closed");
         }

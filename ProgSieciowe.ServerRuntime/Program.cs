@@ -1,13 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using ProgSieciowe.Server;
 using System.Net;
 
-var address = IPAddress.Loopback;
-var port = 1050;
+var address = IPAddress.Parse(args[0]);
+var port = int.Parse(args[1]);
+var directory = args[2];
 using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
 
+var server = new Server(address, port, directory, loggerFactory);
 
-var server = new Server(address, port, "C:\\Users\\Legion\\Desktop\\Temp", loggerFactory);
-
-server.StartAsync().Wait();
+server.Start();
