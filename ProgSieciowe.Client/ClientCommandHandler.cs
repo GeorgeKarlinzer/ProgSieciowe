@@ -183,6 +183,7 @@ namespace ProgSieciowe.Client
 
         private bool HandleExit()
         {
+            _communicator.Send($"{(int)CommandType.exit}");
             _io.WriteString("Closing connection...");
             return false;
         }

@@ -1,9 +1,8 @@
-﻿using System;
-
-namespace ProgSieciowe.Core
+﻿namespace ProgSieciowe.Core
 {
     public interface ICommunicator
     {
+        string RemoteEndPoint { get; }
         void Send(string msg);
         void Send(byte[] bytes);
         string ReceiveString();

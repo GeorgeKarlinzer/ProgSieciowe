@@ -7,6 +7,8 @@ namespace ProgSieciowe.Core
     {
         private readonly TcpClient _tcpClient;
 
+        public string RemoteEndPoint => _tcpClient.Client.RemoteEndPoint.ToString();
+
         public TcpCommunicator(TcpClient tcpClient)
         {
             _tcpClient = tcpClient;

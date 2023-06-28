@@ -107,14 +107,20 @@ namespace ProgSieciowe.Server
             var oldName = input.Split('|').First();
             var newName = input.Split('|').Last();
 
-            if (!File.Exists(GetFileName(oldName)))
-            {
-                _communicator.Send("\tInvalid file name");
-                return true;
-            }
-
             try
             {
+                if (!File.Exists(GetFileName(oldName)))
+                {
+                    _communicator.Send("\tInvalid file name");
+                    return true;
+                }
+
+                if (File.Exists(GetFileName(newName)))
+                {
+                    _communicator.Send($"\tFile with {newName} already exists");
+                    return true;
+                }
+
                 File.Move(GetFileName(oldName), GetFileName(newName));
                 _communicator.Send("\tSuccessfully renamed file");
             }

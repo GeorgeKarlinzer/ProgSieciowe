@@ -10,6 +10,8 @@ namespace ProgSieciowe.Core
         protected UdpClient _client;
         protected IPEndPoint _endPoint;
 
+        public string RemoteEndPoint => _endPoint.ToString();
+
         public UdpCommunicator(UdpClient client, IPEndPoint endPoint)
         {
             _client = client;
