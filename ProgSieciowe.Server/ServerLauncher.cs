@@ -32,14 +32,14 @@ namespace ProgSieciowe.Server
                 _logger.LogInformation("Launcher started");
                 var arg = (new IPEndPoint(_address, _port), _loggerFactory, _directory);
 
-                var udpThread = new Thread(new ParameterizedThreadStart(UpdServerProcess))
+                var udpThread = new Thread(new ParameterizedThreadStart(UpdServer))
                 {
                     IsBackground = true,
                     Name = "UDP server thread"
                 };
                 udpThread.Start(arg);
 
-                var tcpThread = new Thread(new ParameterizedThreadStart(TcpServerProcess))
+                var tcpThread = new Thread(new ParameterizedThreadStart(TcpServer))
                 {
                     IsBackground = true,
                     Name = "TCP server thread"
@@ -52,10 +52,10 @@ namespace ProgSieciowe.Server
             }
         }
 
-        private static void TcpServerProcess(object? arg)
+        private static void TcpServer(object? arg)
         {
             var (endPoint, loggerFactory, directory) = ((IPEndPoint, ILoggerFactory, string))arg!;
-            var logger = loggerFactory.CreateLogger<TcpServer>();
+            var logger = loggerFactory.CreateLogger<TcpConnectionHandler>();
 
             var listener = new TcpListener(endPoint);
             listener.Start(Constants.MaxConnections);
@@ -68,15 +68,15 @@ namespace ProgSieciowe.Server
                 client.Client.ReceiveTimeout = Constants.DefaultTimeOut;
                 client.Client.SendTimeout = Constants.DefaultTimeOut;
 
-                var tcpServer = new TcpServer(client, loggerFactory, directory);
-                _ = tcpServer.StartServerAsync();
+                var tcpServer = new TcpConnectionHandler(client, loggerFactory, directory);
+                _ = tcpServer.StartAsync();
             }
         }
 
-        private static void UpdServerProcess(object? arg)
+        private static void UpdServer(object? arg)
         {
             var (endPoint, loggerFactory, directory) = ((IPEndPoint, ILoggerFactory, string))arg!;
-            var logger = loggerFactory.CreateLogger<UdpServer>();
+            var logger = loggerFactory.CreateLogger<UdpConnectionHandler>();
             var connections = new ConcurrentDictionary<string, Pipe>();
             var udpServer = new UdpClient(endPoint);
 
@@ -96,9 +96,9 @@ namespace ProgSieciowe.Server
 
                     var p = new Pipe();
                     connections.TryAdd(result.RemoteEndPoint.ToString(), p);
-                    var udpClientServer = new UdpServer(udpServer, result.RemoteEndPoint, p, loggerFactory, directory);
+                    var udpClientServer = new UdpConnectionHandler(udpServer, result.RemoteEndPoint, p, loggerFactory, directory);
                     udpClientServer.Stop += remoteEndPoint => connections.Remove(remoteEndPoint.ToString(), out _);
-                    _ = udpClientServer.StartServerAsync();
+                    _ = udpClientServer.StartAsync();
                 }
                 else
                 {

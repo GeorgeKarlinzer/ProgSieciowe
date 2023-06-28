@@ -4,14 +4,14 @@ using ProgSieciowe.Core.Enums;
 
 namespace ProgSieciowe.Server
 {
-    internal abstract class ServerBase
+    internal abstract class ConnectionHandlerBase
     {
         protected readonly ICommunicator _communicator;
         protected readonly ILogger _logger;
         protected readonly ILoggerFactory _loggerFactory;
         protected readonly string _directory;
 
-        public ServerBase(ICommunicator communicator, ILogger logger, ILoggerFactory loggerFactory, string directory)
+        public ConnectionHandlerBase(ICommunicator communicator, ILogger logger, ILoggerFactory loggerFactory, string directory)
         {
             _communicator = communicator;
             _logger = logger;
@@ -19,7 +19,7 @@ namespace ProgSieciowe.Server
             _directory = directory;
         }
 
-        public virtual async Task StartServerAsync()
+        public virtual async Task StartAsync()
         {
             var commandHandler = new ServerCommandHandler(_communicator, _loggerFactory, _directory);
             _logger.LogInformation($"Client {_communicator.RemoteEndPoint} connected");
