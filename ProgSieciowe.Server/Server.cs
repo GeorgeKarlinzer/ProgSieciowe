@@ -6,24 +6,24 @@ using System.Net.Sockets;
 
 namespace ProgSieciowe.Server
 {
-    public class Server
+    public class ServerLauncher
     {
         private readonly IPAddress _address;
         private readonly int _port;
         private readonly string _directory;
-        private readonly ILogger<Server> _logger;
+        private readonly ILogger<ServerLauncher> _logger;
         private readonly ILoggerFactory _loggerFactory;
 
-        public Server(IPAddress address, int port, string directory, ILoggerFactory loggerFactory)
+        public ServerLauncher(IPAddress address, int port, string directory, ILoggerFactory loggerFactory)
         {
             _address = address;
             _port = port;
             _directory = directory;
             _loggerFactory = loggerFactory;
-            _logger = loggerFactory.CreateLogger<Server>();
+            _logger = loggerFactory.CreateLogger<ServerLauncher>();
         }
 
-        public void Start()
+        public void Launch()
         {
             try
             {
@@ -42,9 +42,6 @@ namespace ProgSieciowe.Server
                     Name = "TCP server thread"
                 };
                 tcpThread.Start(arg);
-
-                Console.WriteLine("Press <ENTER> to stop the servers.");
-                Console.ReadLine();
             }
             catch (Exception ex)
             {

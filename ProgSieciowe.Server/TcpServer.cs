@@ -32,6 +32,9 @@ namespace ProgSieciowe.Server
             while (true)
             {
                 var client = listener.AcceptTcpClient();
+                client.Client.ReceiveTimeout = Constants.DefaultTimeOut;
+                client.Client.SendTimeout = Constants.DefaultTimeOut;
+
                 var tcpCommunicator = new TcpCommunicator(client);
                 HandleConnectionAsync(tcpCommunicator, loggerFactory);
             }
@@ -39,7 +42,7 @@ namespace ProgSieciowe.Server
 
         private static async void HandleConnectionAsync(ICommunicator communicator, ILoggerFactory loggerFactory)
         {
-            var commandHandler = new CommandHandler(communicator, loggerFactory, _directory);
+            var commandHandler = new ServerCommandHandler(communicator, loggerFactory, _directory);
             _logger.LogInformation("Client connected");
 
             var run = true;
@@ -47,7 +50,7 @@ namespace ProgSieciowe.Server
             {
                 while (run)
                 {
-                    var msg = await communicator.ReceiveStringAsync();
+                    var msg = await communicator.ReceiveStringAsync(Constants.ClientRequestTimeOut);
                     _logger.LogInformation("Received command {msg}", msg);
                     var command = (CommandType)int.Parse(msg);
                     run = commandHandler.HandleCommand(command);

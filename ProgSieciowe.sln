@@ -7,11 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProgSieciowe.Server", "Prog
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProgSieciowe.Client", "ProgSieciowe.Client\ProgSieciowe.Client.csproj", "{7F225159-8EF4-40D9-965E-AD7D6E20EA37}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProgSieciowe.ClientRuntime", "ProgSieciowe.ClientRuntime\ProgSieciowe.ClientRuntime.csproj", "{E6A18D2F-CC5B-46ED-A7A1-546D95BB0523}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProgSieciowe.ClientRuntime", "ProgSieciowe.ClientRuntime\ProgSieciowe.ClientRuntime.csproj", "{E6A18D2F-CC5B-46ED-A7A1-546D95BB0523}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProgSieciowe.ServerRuntime", "ProgSieciowe.ServerRuntime\ProgSieciowe.ServerRuntime.csproj", "{72958042-8A48-4032-8078-3C470DDD1DA7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProgSieciowe.ServerRuntime", "ProgSieciowe.ServerRuntime\ProgSieciowe.ServerRuntime.csproj", "{72958042-8A48-4032-8078-3C470DDD1DA7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProgSieciowe.Core", "ProgSieciowe.Core\ProgSieciowe.Core.csproj", "{9FD11621-915C-4111-AF09-DFE5300D7155}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProgSieciowe.Core", "ProgSieciowe.Core\ProgSieciowe.Core.csproj", "{9FD11621-915C-4111-AF09-DFE5300D7155}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProgSieciowe.ServerService", "ProgSieciowe.ServerService\ProgSieciowe.ServerService.csproj", "{36632450-679E-42E9-92BF-51E5438E252E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{9FD11621-915C-4111-AF09-DFE5300D7155}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9FD11621-915C-4111-AF09-DFE5300D7155}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9FD11621-915C-4111-AF09-DFE5300D7155}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36632450-679E-42E9-92BF-51E5438E252E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36632450-679E-42E9-92BF-51E5438E252E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36632450-679E-42E9-92BF-51E5438E252E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36632450-679E-42E9-92BF-51E5438E252E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

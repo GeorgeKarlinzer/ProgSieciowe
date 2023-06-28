@@ -1,12 +1,31 @@
 ﻿using Microsoft.Extensions.Logging;
 using ProgSieciowe.Server;
+using System.Diagnostics;
 using System.Net;
 
-var address = IPAddress.Parse(args[0]);
-var port = int.Parse(args[1]);
-var directory = args[2];
+if (args.Length == 0)
+{
+    args = new[] { "127.0.0.1", "1050", ".\\" };
+}
+
+ServerLauncher server = null;
+IPAddress address;
+int port;
+string directory;
 using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-
-var server = new Server(address, port, directory, loggerFactory);
-
-server.Start();
+try
+{
+    address = IPAddress.Parse(args[0]);
+    port = int.Parse(args[1]);
+    directory = args[2];
+    server = new ServerLauncher(address, port, directory, loggerFactory);
+}
+catch
+{
+    Console.WriteLine("Wrong arguments, try:");
+    Console.WriteLine($"\tProgram.exe <ip_address> <port> <working_direcory>");
+    return;
+}
+server.Launch();
+Console.WriteLine("Press [ENTER] to close the application");
+Console.ReadLine();

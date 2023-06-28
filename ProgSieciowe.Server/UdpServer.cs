@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace ProgSieciowe.Server
 {
@@ -18,6 +19,10 @@ namespace ProgSieciowe.Server
         {
             var (endPoint, loggerFactory, directory) = ((IPEndPoint, ILoggerFactory, string))arg!;
             var udpServer = new UdpClient(endPoint);
+
+            udpServer.Client.ReceiveTimeout = Constants.DefaultTimeOut;
+            udpServer.Client.SendTimeout = Constants.DefaultTimeOut;
+
             _logger = loggerFactory.CreateLogger<UdpServer>();
             _directory = directory;
 
@@ -25,17 +30,20 @@ namespace ProgSieciowe.Server
             {
                 var result = udpServer.ReceiveAsync().Result;
 
-                if (_connections.ContainsKey(result.RemoteEndPoint.ToString()))
+                if (!_connections.ContainsKey(result.RemoteEndPoint.ToString()))
                 {
-                    _connections.TryGetValue(result.RemoteEndPoint.ToString(), out var p);
-                    p.Writer.WriteAsync(result.Buffer).AsTask().Wait();
-                }
-                else
-                {
+                    if (_connections.Count == Constants.MaxConnections)
+                        continue;
+
                     var p = new Pipe();
                     _connections.TryAdd(result.RemoteEndPoint.ToString(), p);
                     var udpClientServer = new UdpServer(udpServer, result.RemoteEndPoint, p);
                     udpClientServer.StartAsync(loggerFactory);
+                }
+                else
+                {
+                    _connections.TryGetValue(result.RemoteEndPoint.ToString(), out var p);
+                    p.Writer.WriteAsync(result.Buffer);
                 }
             }
         }
@@ -49,24 +57,46 @@ namespace ProgSieciowe.Server
 
         private async void StartAsync(ILoggerFactory loggerFactory)
         {
-            var commandHandler = new CommandHandler(this, loggerFactory, _directory);
+            var commandHandler = new ServerCommandHandler(this, loggerFactory, _directory);
+            _logger.LogInformation("Client connected");
+
             var run = true;
-            while (run)
+            try
             {
-                var msg = await ReceiveStringAsync();
-                _logger.LogInformation("Received command {msg}", msg);
-                var command = (CommandType)int.Parse(msg);
-                run = commandHandler.HandleCommand(command);
+                while (run)
+                {
+                    var msg = await ReceiveStringAsync(Constants.ClientRequestTimeOut);
+                    _logger.LogInformation("Received command {msg}", msg);
+                    var command = (CommandType)int.Parse(msg);
+                    run = commandHandler.HandleCommand(command);
+                }
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error");
+            }
+
             _connections.Remove(_endPoint.ToString(), out _);
+            _logger.LogInformation("Client disconnected");
         }
 
-        protected override async Task<byte[]> InternalReceiveAsync()
+        protected override async Task<byte[]> InternalReceiveAsync(int timeout)
         {
-            var result = await _pipe.Reader.ReadAsync();
-            var buffer = result.Buffer.FirstSpan.ToArray();
-            _pipe.Reader.AdvanceTo(result.Buffer.End);
-            return buffer;
+            var result = await Task.Run(() =>
+            {
+                var task = _pipe.Reader.ReadAsync().AsTask();
+                task.Wait(timeout);
+                if (task.IsCompleted)
+                {
+                    var buffer = task.Result.Buffer.FirstSpan.ToArray();
+                    _pipe.Reader.AdvanceTo(task.Result.Buffer.End);
+                    return buffer;
+                }
+
+                throw new TimeoutException();
+            });
+
+            return result;
         }
     }
 }

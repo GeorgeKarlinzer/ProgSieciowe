@@ -8,6 +8,7 @@ namespace ProgSieciowe.Core
         void Send(byte[] bytes);
         string ReceiveString();
         Task<string> ReceiveStringAsync();
+        Task<string> ReceiveStringAsync(int timeout);
         void SendFile(string path);
         void ReceiveFile(string path);
     }

@@ -1,18 +1,14 @@
-﻿using Microsoft.Extensions.Logging;
-using ProgSieciowe.Core;
+﻿using ProgSieciowe.Core;
 using ProgSieciowe.Core.Enums;
-using System.Data.Common;
-using System.IO;
-using System.Reflection;
 
 namespace ProgSieciowe.Client
 {
-    internal class CommandHandler
+    internal class ClientCommandHandler
     {
         private readonly ICommunicator _communicator;
         private readonly IInputOutput _io;
 
-        public CommandHandler(ICommunicator communicator, IInputOutput io)
+        public ClientCommandHandler(ICommunicator communicator, IInputOutput io)
         {
             _communicator = communicator;
             _io = io;
@@ -145,6 +141,7 @@ namespace ProgSieciowe.Client
             }
 
             _communicator.ReceiveFile(path);
+            _io.WriteString("\tFile was download successfully");
 
             return true;
         }

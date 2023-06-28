@@ -23,28 +23,40 @@ namespace ProgSieciowe.Client
 
         public void Start()
         {
-            ICommunicator communicator;
-            var serverEndPoint = new IPEndPoint(_address, _port);
-            if (_protocol is Protocol.Tcp)
+            try
             {
-                var tcpClient = new TcpClient();
-                tcpClient.Connect(serverEndPoint);
-                communicator = new TcpCommunicator(tcpClient);
-                _io.WriteString("Connection established");
-            }
-            else
-            {
-                var client = new UdpClient();
-                communicator = new UdpCommunicator(client, serverEndPoint);
-                communicator.Send("start");
-            }
+                ICommunicator communicator;
+                var serverEndPoint = new IPEndPoint(_address, _port);
+                if (_protocol is Protocol.Tcp)
+                {
+                    var tcpClient = new TcpClient();
+                    tcpClient.Connect(serverEndPoint);
+                    tcpClient.ReceiveTimeout = Constants.DefaultTimeOut;
+                    tcpClient.SendTimeout = Constants.DefaultTimeOut;
 
-            StartCient(communicator);
+                    communicator = new TcpCommunicator(tcpClient);
+                    _io.WriteString("Connection established");
+                }
+                else
+                {
+                    var client = new UdpClient();
+                    client.Client.ReceiveTimeout = Constants.DefaultTimeOut;
+                    client.Client.SendTimeout = Constants.DefaultTimeOut;
+                    communicator = new UdpCommunicator(client, serverEndPoint);
+                    communicator.Send("start");
+                }
+
+                StartCient(communicator);
+            }
+            catch(Exception ex)
+            {
+                _io.WriteString(ex.Message);
+            }
         }
 
         private void StartCient(ICommunicator communicator)
         {
-            var commandHelper = new CommandHandler(communicator, _io);
+            var commandHelper = new ClientCommandHandler(communicator, _io);
 
             var run = true;
             try
@@ -55,7 +67,7 @@ namespace ProgSieciowe.Client
                     var input = _io.GetString();
                     var args = new List<string>();
 
-                    foreach (Match match in Regex.Matches(input, @"""([^""]+)""|([^ ]+)"))
+                    foreach (Match match in Regex.Matches(input, @"""([^""]+)""|([^ ]+)").Cast<Match>())
                     {
                         string arg;
                         if (string.IsNullOrEmpty(match.Groups[1].Value))

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using ProgSieciowe.Core.Exceptions;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
@@ -15,43 +16,27 @@ namespace ProgSieciowe.Core
             _endPoint = endPoint;
         }
 
-        protected virtual async Task<byte[]> InternalReceiveAsync()
+        public void Send(string msg)
         {
-            while (true)
-            {
-                var result = await _client.ReceiveAsync();
-                if (result.RemoteEndPoint.ToString() == _endPoint.ToString())
-                    return result.Buffer;
-            }
+            var bytes = Encoding.UTF8.GetBytes(msg);
+            Send(bytes);
         }
 
-        public void ReceiveFile(string path)
+        public void Send(byte[] bytes)
         {
-            var received = 0;
-            var size = int.Parse(ReceiveString());
-            Send("1");
-            using var file = File.OpenWrite(path);
-
-            while (received < size)
-            {
-                var buffer = InternalReceiveAsync().Result;
-                Send("1");
-                file.Write(buffer, 0, buffer.Length);
-                received += buffer.Length;
-            }
+            _client.Send(bytes, _endPoint);
         }
 
         public void SendFile(string path)
         {
             var maxBatchSize = 65507;
             var sent = 0;
-
             var fi = new FileInfo(path);
             var size = fi.Length;
 
             Send(Encoding.UTF8.GetBytes(size.ToString()));
             if (ReceiveString() != "1")
-                return;
+                throw new WrongAnswerException();
 
             using var file = File.OpenRead(path);
 
@@ -64,7 +49,7 @@ namespace ProgSieciowe.Core
                 _client.Send(buffer, batchSize, _endPoint);
                 sent += batchSize;
                 if (ReceiveString() != "1")
-                    return;
+                    throw new WrongAnswerException();
             }
         }
 
@@ -75,19 +60,47 @@ namespace ProgSieciowe.Core
 
         public async Task<string> ReceiveStringAsync()
         {
-            var buffer = await InternalReceiveAsync();
+            return await ReceiveStringAsync(Constants.DefaultTimeOut);
+        }
+
+        public async Task<string> ReceiveStringAsync(int timeout)
+        {
+            var buffer = await InternalReceiveAsync(timeout);
             return Encoding.UTF8.GetString(buffer);
         }
 
-        public void Send(string msg)
+        public void ReceiveFile(string path)
         {
-            var bytes = Encoding.UTF8.GetBytes(msg);
-            Send(bytes);
+            var received = 0;
+            var size = int.Parse(ReceiveString());
+            Send("1");
+            using var file = File.OpenWrite(path);
+
+            while (received < size)
+            {
+                var buffer = InternalReceiveAsync(Constants.DefaultTimeOut).Result;
+                Send("1");
+                file.Write(buffer, 0, buffer.Length);
+                received += buffer.Length;
+            }
         }
 
-        public void Send(byte[] bytes)
+        protected virtual async Task<byte[]> InternalReceiveAsync(int timeout)
         {
-            _client.Send(bytes, _endPoint);
+            while (true)
+            {
+                var result = await Task.Run(() =>
+                {
+                    var task = _client.ReceiveAsync();
+                    task.Wait(timeout);
+                    if (task.IsCompleted)
+                        return task.Result;
+                    throw new TimeoutException();
+                });
+
+                if (result.RemoteEndPoint.ToString() == _endPoint.ToString())
+                    return result.Buffer;
+            }
         }
     }
 }

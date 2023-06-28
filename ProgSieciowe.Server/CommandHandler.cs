@@ -1,21 +1,39 @@
 ﻿using Microsoft.Extensions.Logging;
 using ProgSieciowe.Core;
 using ProgSieciowe.Core.Enums;
-using ProgSieciowe.Server.Extensions;
+using System.Runtime.CompilerServices;
 
 namespace ProgSieciowe.Server
 {
-    internal class CommandHandler
+    internal class ServerCommandHandler
     {
         private readonly ICommunicator _communicator;
         private readonly ILogger _logger;
         private readonly string _directory;
 
-        public CommandHandler(ICommunicator communicator, ILoggerFactory loggerFactory, string directory)
+        public ServerCommandHandler(ICommunicator communicator, ILoggerFactory loggerFactory, string directory)
         {
             _communicator = communicator;
-            _logger = loggerFactory.CreateLogger<CommandHandler>();
+            _logger = loggerFactory.CreateLogger<ServerCommandHandler>();
             _directory = directory;
+        }
+
+        private void HandleHandlableError(Exception ex, [CallerMemberName] string callerName = "")
+        {
+            var msg = $"Error during {callerName}";
+            _communicator.Send("\t" + msg);
+            _logger.LogError(ex, msg);
+        }
+
+        private bool CheckFileExisting(string path)
+        {
+            if (!File.Exists(path))
+            {
+                _communicator.Send("\tFile does not exist");
+                return false;
+            }
+
+            return true;
         }
 
         private string GetFileName(string file) =>
@@ -65,15 +83,19 @@ namespace ProgSieciowe.Server
         private bool HandleDelete()
         {
             var file = _communicator.ReceiveString();
+            var path = GetFileName(file);
 
-            if (file.IsValidFileName())
+            if (!CheckFileExisting(path))
+                return true;
+
+            try
             {
                 File.Delete(GetFileName(file));
                 _communicator.Send("\tSuccessfully deleted file");
             }
-            else
+            catch (Exception ex)
             {
-                _communicator.Send("\tInvalid file name");
+                HandleHandlableError(ex);
             }
 
             return true;
@@ -85,15 +107,22 @@ namespace ProgSieciowe.Server
             var oldName = input.Split('|').First();
             var newName = input.Split('|').Last();
 
-            if (oldName.IsValidFileName() && newName.IsValidFileName())
+            if (!File.Exists(GetFileName(oldName)))
+            {
+                _communicator.Send("\tInvalid file name");
+                return true;
+            }
+
+            try
             {
                 File.Move(GetFileName(oldName), GetFileName(newName));
                 _communicator.Send("\tSuccessfully renamed file");
             }
-            else
+            catch (Exception ex)
             {
-                _communicator.Send("\tInvalid file name");
+                HandleHandlableError(ex);
             }
+
             return true;
         }
 
@@ -102,12 +131,6 @@ namespace ProgSieciowe.Server
             var file = _communicator.ReceiveString();
             var path = GetFileName(file);
             _logger.LogInformation("File to download: {file}", file);
-            if (!file.IsValidFileName())
-            {
-                _communicator.Send("0");
-                _communicator.Send("\tInvalid file name");
-                return true;
-            }
 
             if (!File.Exists(path))
             {
@@ -125,12 +148,6 @@ namespace ProgSieciowe.Server
         private bool HandleUpload()
         {
             var file = _communicator.ReceiveString();
-            if (!file.IsValidFileName())
-            {
-                _communicator.Send("0");
-                _communicator.Send("\tInvalid file name");
-                return true;
-            }
 
             _communicator.Send("1");
             var path = GetFileName(file);
@@ -138,7 +155,6 @@ namespace ProgSieciowe.Server
             _communicator.ReceiveFile(path);
 
             _communicator.Send("\tFile was uploded successfully");
-
             return true;
         }
 
